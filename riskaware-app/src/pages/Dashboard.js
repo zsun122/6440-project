@@ -21,7 +21,7 @@ function Dashboard() {
           </button>
 
           <div className="patient-info">
-            <p><strong>Pateint_id:</strong></p>
+            <p><strong>Patient_id:</strong></p>
 
             {/* year - month - day*/}
             <p><strong>Birth Date:</strong></p>
