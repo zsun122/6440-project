@@ -7,6 +7,8 @@ import LineChart from "../components/LineChart";
 function ScorePage() {
   const navigate = useNavigate();
   const [selectedDisease, setSelectedDisease] = useState(null);
+  const [recommendations, setRecommendations] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // for demo only
   const diseaseData = [
@@ -15,6 +17,31 @@ function ScorePage() {
     { name: "Stroke", score: 33, trend: "Increasing" },
     { name: "Diabetes", score: 4, trend: "Decreasing" },
   ];
+
+  const getRecommendations = async () => {
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:5000/recommendations", {
+        method: "POST",
+        mode: "cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trigger: true }) // fake body
+      });
+
+
+      const data = await response.json();
+      const tips = data.recommendations
+        .split("\n")
+        .filter(line => line.trim().startsWith("-"));
+
+      setRecommendations(tips);
+    } catch (error) {
+      console.error("Error getting recommendations:", error);
+    }
+
+    setLoading(false);
+  };
 
   return (
     <div className="container">
@@ -27,11 +54,10 @@ function ScorePage() {
           <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "30px" }}>
             <thead>
               <tr>
+                {/* table header*/}
+
                 <th style={thStyle}>Disease</th>
                 <th style={thStyle}>Risk Score</th>
-                
-                {/* will update later for comparision */}
-
                 <th style={thStyle}>Trend</th>
                 <th style={thStyle}></th>
               </tr>
@@ -56,12 +82,24 @@ function ScorePage() {
             </tbody>
           </table>
 
-          <div style={{ background: "#d4eaff", borderRadius: "10px", padding: "15px", marginBottom: "20px" }}>
-            <p><strong>Recommendation:</strong></p>
-            <ul>
-              <li>drink more water</li>
-            </ul>
+          {/*recommendation part*/}
+
+          <div style={{ textAlign: "center", marginBottom: "20px" }}>
+            <button className="btn" onClick={getRecommendations} disabled={loading}>
+              {loading ? "Loading..." : "Get Personalized Recommendations"}
+            </button>
           </div>
+
+          {recommendations.length > 0 && (
+            <div style={{ background: "#d4eaff", borderRadius: "10px", padding: "15px", marginBottom: "20px" }}>
+              <p><strong>Recommendations:</strong></p>
+              <ul>
+                {recommendations.map((rec, index) => (
+                  <li key={index}>{rec.replace("-", "") .replace(/\*\*/g, "").trim()}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div style={{ textAlign: "center" }}>
             <button className="btn" onClick={() => navigate("/dashboard")}>
@@ -71,7 +109,7 @@ function ScorePage() {
         </div>
       </div>
 
-      {/* chart */}
+      {/* line chart*/}
       {selectedDisease && (
         <LineChart
           disease={selectedDisease}
