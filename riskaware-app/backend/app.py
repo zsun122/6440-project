@@ -8,7 +8,7 @@ from firebase_admin import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 client = OpenAI(
-    api_key="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",
+    api_key="",
     base_url="https://api.groq.com/openai/v1"
 )
 
