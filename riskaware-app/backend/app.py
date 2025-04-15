@@ -8,15 +8,14 @@ from firebase_admin import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 client = OpenAI(
-    api_key="",
+    api_key="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",
     base_url="https://api.groq.com/openai/v1"
 )
 
 app = Flask(__name__)
 CORS(app)
 
-#firestore certificate json file name here, place file in same directory
-cred = credentials.Certificate("")
+cred = credentials.Certificate("cs6440-ca243-firebase-adminsdk-fbsvc-17837a36a9.json")
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()
@@ -66,6 +65,49 @@ def get_recommendations():
 
     tips = response.choices[0].message.content
     return jsonify({"recommendations": tips}), 200
+
+@app.route('/synthea_patient_ids', methods=['GET'])
+def get_all_patient_ids():
+    docs = synthea_patients_ref.stream()
+    patient_ids = [doc.to_dict().get("Id") for doc in docs if "Id" in doc.to_dict()]
+    return jsonify(patient_ids), 200
+
+@app.route('/synthea_patient_info', methods=['GET'])
+def get_synthea_patient_info():
+    user_id = request.args.get("user_id")
+    if not user_id:
+        return "Missing user_id", 400
+
+    docs = synthea_patients_ref.where(filter=FieldFilter("Id", "==", user_id)).stream()
+    for doc in docs:
+        return jsonify(doc.to_dict()), 200
+
+    return "Patient not found", 404
+
+@app.route('/update_patient_info', methods=['POST'])
+def update_patient_info():
+    data = request.get_json()
+    patient_id = data.get("patientId")
+
+    docs = synthea_patients_ref.where(filter=FieldFilter("Id", "==", patient_id)).stream()
+    patient_doc = next(docs, None)
+
+    update_data = {
+        "FIRST": data.get("firstName", ""),
+        "MIDDLE": data.get("middleName", ""),
+        "LAST": data.get("lastName", ""),
+        "BIRTHDATE": data.get("birthDate", ""),
+        "GENDER": data.get("gender", ""),
+        "RACE": data.get("race", ""),
+        "STATE": data.get("state", ""),
+        # "CANCER_GENETIC_RISK": data.get("cancerGeneticRisk", ""),
+        # "CANCER_HISTORY": data.get("cancerHistory", "")
+    }
+
+    synthea_patients_ref.document(patient_doc.id).update(update_data)
+
+    return jsonify({"message": "Patient info updated successfully"}), 200
+
 
 @app.route('/mimic_user_data', methods=['GET'])
 def get_mimic_user_data():
