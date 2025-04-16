@@ -15,6 +15,7 @@ client = OpenAI(
 app = Flask(__name__)
 CORS(app)
 
+#firestore certificate json file name here, place file in same directory
 cred = credentials.Certificate("cs6440-ca243-firebase-adminsdk-fbsvc-17837a36a9.json")
 firebase_admin.initialize_app(cred)
 
