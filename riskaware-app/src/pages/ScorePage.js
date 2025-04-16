@@ -1,45 +1,95 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../style/Dashboard.css";
 import "../style/Chart.css";
 import LineChart from "../components/LineChart";
 
 function ScorePage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const patientId = location.state?.patientId;
+
   const [selectedDisease, setSelectedDisease] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  const [diseaseData, setDiseaseData] = useState([]);
+  // const [tableLoading, setTableLoading] = useState(true);
 
-  // for demo only
-  const diseaseData = [
-    { name: "Heart Disease", score: 50, trend: "Decreasing" },
-    { name: "Cancer", score: 21, trend: "Stable" },
-    { name: "Stroke", score: 33, trend: "Increasing" },
-    { name: "Diabetes", score: 4, trend: "Decreasing" },
-  ];
+
+  useEffect(() => {
+    if (patientId) {
+      fetch("http://localhost:5000/get_scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientId }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          const formatted = Object.entries(data).map(([name, scoreDict]) => {
+            const sortedDates = Object.keys(scoreDict).sort(); 
+            const latestDate = sortedDates[sortedDates.length -1];
+            // const latestDate = sortedDates[-1];
+            const latestScore = parseFloat(scoreDict[latestDate].toFixed(3));
+
+            const trendData = sortedDates.map(date => ({
+              date,
+              value: scoreDict[date],
+            }));
+
+            let trend = "unchanging";
+
+            if (sortedDates.length >= 2) {
+              const secondlastDate = sortedDates[sortedDates.length -2];
+              const secondlatestScore = parseFloat(scoreDict[secondlastDate].toFixed(3));
+
+              if (secondlatestScore > latestScore) {
+                trend = "Decreasing"
+              } else if (secondlatestScore < latestScore) {
+                trend = "Increasing"
+              } else {
+                trend = "Unchanging";
+              }
+            }
+          
+            return {
+              name,
+              score: latestScore.toFixed(3),
+              trend,
+              trendData,
+            };
+          });
+
+          setDiseaseData(formatted);
+        })
+        .catch((err) => console.error("Error loading scores:", err));
+    }
+  }, [patientId]);
 
   const getRecommendations = async () => {
     setLoading(true);
-
+  
     try {
+      const heart = parseFloat(diseaseData.find(d => d.name === "Heart Disease")?.score || 0);
+      const diabetes = parseFloat(diseaseData.find(d => d.name === "Diabetes")?.score || 0);
+      const stroke = parseFloat(diseaseData.find(d => d.name === "Stroke")?.score || 0);
+      const cancer = parseFloat(diseaseData.find(d => d.name === "Cancer")?.score || 0);
+  
+      const requestBody = { heart, diabetes, stroke, cancer };
+  
       const response = await fetch("http://localhost:5000/recommendations", {
         method: "POST",
-        mode: "cors",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trigger: true }) // fake body
+        body: JSON.stringify(requestBody),
       });
-
-
+  
       const data = await response.json();
-      const tips = data.recommendations
-        .split("\n")
-        .filter(line => line.trim().startsWith("-"));
-
-      setRecommendations(tips);
+      setRecommendations(data.recommendations || []);
     } catch (error) {
       console.error("Error getting recommendations:", error);
+      alert("Failed to fetch recommendations.");
     }
-
+  
     setLoading(false);
   };
 
@@ -54,10 +104,8 @@ function ScorePage() {
           <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "30px" }}>
             <thead>
               <tr>
-                {/* table header*/}
-
                 <th style={thStyle}>Disease</th>
-                <th style={thStyle}>Risk Score</th>
+                <th style={thStyle}>Latest Risk Score</th>
                 <th style={thStyle}>Trend</th>
                 <th style={thStyle}></th>
               </tr>
@@ -72,7 +120,7 @@ function ScorePage() {
                     <button
                       className="btn"
                       style={{ padding: "6px 12px", width: "auto" }}
-                      onClick={() => setSelectedDisease(d.name)}
+                      onClick={() => setSelectedDisease(d)}
                     >
                       View Details
                     </button>
@@ -82,8 +130,7 @@ function ScorePage() {
             </tbody>
           </table>
 
-          {/*recommendation part*/}
-
+          {/* Recommendation section */}
           <div style={{ textAlign: "center", marginBottom: "20px" }}>
             <button className="btn" onClick={getRecommendations} disabled={loading}>
               {loading ? "Loading..." : "Get Personalized Recommendations"}
@@ -95,26 +142,26 @@ function ScorePage() {
               <p><strong>Recommendations:</strong></p>
               <ul>
                 {recommendations.map((rec, index) => (
-                  <li key={index}>{rec.replace("-", "") .replace(/\*\*/g, "").trim()}</li>
+                  <li key={index}>{rec.replace("-", "").replace(/\*\*/g, "").trim()}</li>
                 ))}
               </ul>
             </div>
           )}
 
           <div style={{ textAlign: "center" }}>
-            <button className="btn" onClick={() => navigate("/dashboard")}>
-              Back to Dashboard
+            <button className="btn" onClick={() => navigate("/*")}>
+              Back to Search Page
             </button>
           </div>
         </div>
       </div>
 
-      {/* line chart*/}
       {selectedDisease && (
         <LineChart
-          disease={selectedDisease}
-          onClose={() => setSelectedDisease(null)}
-        />
+        disease={selectedDisease.name}
+        trendData={selectedDisease.trendData}
+        onClose={() => setSelectedDisease(null)}
+        />      
       )}
     </div>
   );
