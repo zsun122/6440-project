@@ -7,6 +7,8 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
+import model_inference
+
 client = OpenAI(
     api_key="",
     base_url="https://api.groq.com/openai/v1"
@@ -41,20 +43,39 @@ synthea_ref_names = ["encounters", "observations"]
 
 @app.route('/recommendations', methods=['POST', 'OPTIONS'])
 def get_recommendations():
-    ## modify later
+    if request.method == "OPTIONS":
+        return jsonify({"message": "CORS preflight OK"}), 200
+    
+    data = request.get_json()
+
+    heart = float(data.get("heart", 0))
+    diabetes = float(data.get("diabetes", 0))
+    stroke = float(data.get("stroke", 0))
+    cancer = float(data.get("cancer", 0))
+
     myprompt = (
-        "You are a preventive health coach analyzing a patient's disease risk scores, which are each rated from 0 to 100 and higher means greater risk.\n\n"
-        "Here is the patient's data:\n"
-        "- Heart Disease Risk: 75/100\n"
-        "- Diabetes Risk: 0/100\n"
-        "- Stroke Risk: 45/100\n"
-        "- Cancer Risk: 30/100\n"
-        "- Age: 45\n"
-        "- Gender: Male\n\n"
-        "Give exactly 4 personalized and practical medical tips, one for each disease above, to help reduce the patient's risk."
-        "Format your output strictly as a plain bullet list using dashes. No headings or extra commentary."
-        "the format should be like: Heart Disease Risk (75/100): some recommendations"
-    )
+    "You are a highly knowledgeable and practical preventive health coach"
+    "Your role is to provide simple and personalized medical lifestyle tips to help patients reduce their disease risks"
+    "Each disease risk is a score between 0 and 1, where higher values indicate greater risk.\n\n"
+
+    "Patient's current disease risk scores:\n"
+    f"- Cancer Risk: {cancer:.3f}/1\n"
+    f"- Diabetes Risk: {diabetes:.3f}/1\n"
+    f"- Heart Disease Risk: {heart:.3f}/1\n"
+    f"- Stroke Risk: {stroke:.3f}/1\n\n"
+
+    "Your task:\n"
+    "- Provide exactly 4 personalized recommendations, one for each disease listed above.\n"
+    "- Each recommendation must be realistic and lifestyle-based (focusing on diet, activity, habits, or routine screenings).\n"
+    "- Avoid vague advice such as 'stay healthy'; be specific.\n"
+    "- Format each tip as a bullet point starting with a dash.\n"
+    "- when having a low score (less than 0.2), you should give a positive feedback and then tips.\n"
+    "- when having a high score (more than 0.8), you should give a negative feedback and then tips."
+    "- Each line must follow this format:\n"
+    "  - [Disease] Risk ([score]/1): You have a [percent]% chance of having [Disease]. My recommendation is [specific tip].\n\n"
+
+    "Now generate the 4 personalized recommendations based on the scores:"
+)
 
     response = client.chat.completions.create(
         model="llama3-8b-8192",
@@ -64,7 +85,10 @@ def get_recommendations():
         ]
     )
 
-    tips = response.choices[0].message.content
+    content = response.choices[0].message.content
+
+    tips = [line.strip() for line in content.split("\n") if line.strip().startswith("-")]
+
     return jsonify({"recommendations": tips}), 200
 
 @app.route('/synthea_patient_ids', methods=['GET'])
@@ -109,6 +133,21 @@ def update_patient_info():
 
     return jsonify({"message": "Patient info updated successfully"}), 200
 
+@app.route("/get_scores", methods=["POST"])
+def get_scores():
+    patient_id = request.json.get("patientId")
+
+    try:
+        scores = {
+            "Heart Disease": model_inference.heart_disease(patient_id),
+            "Cancer": model_inference.cancer(patient_id),
+            "Stroke": model_inference.stroke(patient_id),
+            "Diabetes": model_inference.diabetes(patient_id),
+        }
+        return jsonify(scores)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 
 @app.route('/mimic_user_data', methods=['GET'])
 def get_mimic_user_data():

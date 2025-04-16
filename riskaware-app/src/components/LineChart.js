@@ -13,22 +13,13 @@ import "../style/Chart.css";
 
 ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Tooltip, Legend);
 
-function LineChart({ disease, onClose }) {
-  // replace later
-  const chartDataMap = {
-    "Heart Disease": [30, 45, 55, 50],
-    "Cancer": [15, 20, 22, 21],
-    "Stroke": [20, 58, 40, 33],
-    "Diabetes": [8, 6, 5, 4],
-  };
-
-  // for demo
+function LineChart({ disease, trendData, onClose }) {
   const data = {
-    labels: ["1/10/2025", "1/23/2025", "2/13/2025", "3/13/2025"],
+    labels: trendData.map(entry => entry.date),
     datasets: [
       {
         label: `${disease} Risk Score`,
-        data: chartDataMap[disease] || [],
+        data: trendData.map(entry => entry.value),
         borderColor: "#007bff",
         backgroundColor: "rgba(0, 123, 255, 0.2)",
         tension: 0.2,
@@ -39,10 +30,11 @@ function LineChart({ disease, onClose }) {
     ],
   };
 
+  const maxScore = Math.max(...trendData.map(entry => entry.value), 0.01);
   const options = {
     responsive: true,
     scales: {
-      y: { beginAtZero: true },
+      y: { beginAtZero: true, max: maxScore* 1.1 },
     },
     plugins: {
       legend: { display: false },

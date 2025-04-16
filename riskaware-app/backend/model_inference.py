@@ -5,6 +5,11 @@ import requests
 import json
 from datetime import datetime, date
 
+cvd_model = pickle.load(open('cvd_model.pkl', 'rb'))
+cancer_model = pickle.load(open('cancer_model.pkl', 'rb'))
+stroke_model = pickle.load(open('stroke_model.pkl', 'rb'))
+diabetes_model = pickle.load(open('diabetes_model.pkl', 'rb'))
+
 # Calculating age
 def calculate_age(birthdate, encounter_date):
     birthday = datetime.strptime(birthdate, '%Y-%m-%d')
@@ -65,9 +70,7 @@ def heart_disease(patient_id):
         features.append(float(encounter[encounter['Observation_Desc'] == 'Slope of ST Segment']['VALUE'].iloc[0]))
         features.append(float(encounter[encounter['Observation_Desc'] == 'Number of Major Vessels Colored by Fluoroscopy']['VALUE'].iloc[0]))
 
-        model = pickle.load(open('cvd_model.pkl', 'rb'))
-
-        pred = model.predict_proba(np.array(features).reshape(1, -1))[0][1]
+        pred = cvd_model.predict_proba(np.array(features).reshape(1, -1))[0][1]
 
         res[encounter_date] = float(pred)
 
@@ -100,9 +103,8 @@ def cancer(patient_id):
         features.append(float(encounter[encounter['Observation_Desc'] == 'Physical Activity']['VALUE'].iloc[0]))
         features.append(float(encounter[encounter['Observation_Desc'] == 'Alcohol Intake']['VALUE'].iloc[0]))
         features.append(float(encounter['CANCER_HISTORY'].iloc[0]))
-        model = pickle.load(open('cancer_model.pkl', 'rb'))
 
-        pred = model.predict_proba(np.array(features).reshape(1, -1))[0][1]
+        pred = cancer_model.predict_proba(np.array(features).reshape(1, -1))[0][1]
 
         res[encounter_date] = float(pred)
 
@@ -136,9 +138,7 @@ def stroke(patient_id):
         features.append(float(encounter[encounter['Observation_Desc'] == 'Fasting Glucose']['VALUE'].iloc[0]))
         features.append(float(encounter[encounter['Observation_Desc'] == 'Body mass index (BMI) [Ratio]']['VALUE'].iloc[0]))
 
-        model = pickle.load(open('stroke_model.pkl', 'rb'))
-
-        pred = model.predict_proba(np.array(features).reshape(1, -1))[0][1]
+        pred = stroke_model.predict_proba(np.array(features).reshape(1, -1))[0][1]
 
         res[encounter_date] = float(pred)
 
@@ -173,9 +173,7 @@ def diabetes(patient_id):
         features.append(float(encounter[encounter['Observation_Desc'] == 'HbA1c']['VALUE'].iloc[0]))
         features.append(float(encounter[encounter['Observation_Desc'] == 'Fasting Glucose']['VALUE'].iloc[0]))
 
-        model = pickle.load(open('diabetes_model.pkl', 'rb'))
-
-        pred = model.predict_proba(np.array(features).reshape(1, -1))[0][1]
+        pred = diabetes_model.predict_proba(np.array(features).reshape(1, -1))[0][1]
 
         res[encounter_date] = float(pred)
 
