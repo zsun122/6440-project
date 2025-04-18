@@ -145,15 +145,15 @@ function ScorePage() {
 
           {/* Recommendation section */}
           <div style={{ textAlign: "center", marginBottom: "20px" }}>
-            <button className="btn" onClick={getRecommendations} disabled={loading}>
+            <button className="btn" onClick={ getRecommendations} disabled={loading}>
               {loading ? "Loading..." : "Get Personalized Recommendations"}
             </button>
           </div>
 
-          {recommendations.length > 0 && (
+          {recommendations.length >0 && (
             <div style={{ background: "#d4eaff", borderRadius: "10px", padding: "15px", marginBottom: "20px" }}>
               <p><strong>Recommendations:</strong></p>
-              <ul>
+              <ul className="no-bullet">
                 {recommendations.map((rec, index) => (
                   <li key={index}>{rec.replace("-", "").replace(/\*\*/g, "").trim()}</li>
                 ))}
@@ -195,5 +195,6 @@ const tdButtonStyle = {
   padding: "10px",
   borderBottom: "1px solid #ccc",
 };
+
 
 export default ScorePage;

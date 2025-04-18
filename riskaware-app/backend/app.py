@@ -12,10 +12,10 @@ import sklearn
 
 import model_inference
 
-client = OpenAI(
-    api_key="", ## put api key here (found in repo readme)
+client = OpenAI (
+    api_key = "", ## put api key here (found in repo readme)
     base_url="https://api.groq.com/openai/v1"
-)
+ )
 
 app = Flask(__name__)
 CORS(app)
@@ -108,7 +108,17 @@ def get_recommendations():
 
     content = response.choices[0].message.content
 
-    tips = [line.strip() for line in content.split("\n") if line.strip().startswith("-")]
+    lines = content.split("\n")
+    temp = []
+
+    for line in lines:
+        stripped = line.strip()
+        temp.append(stripped)
+
+    tips = []
+
+    for line in temp:
+        tips.append(line)
 
     return jsonify({"recommendations": tips}), 200
 
