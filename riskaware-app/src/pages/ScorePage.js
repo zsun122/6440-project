@@ -14,7 +14,9 @@ function ScorePage() {
   const [loading, setLoading] = useState(false);
   
   const [diseaseData, setDiseaseData] = useState([]);
-  // const [tableLoading, setTableLoading] = useState(true);
+  // const [tableLoading, setTableLoading] = useState(true); progree view?
+  const [patientName, setPatientName] = useState("");
+
 
 
   useEffect(() => {
@@ -38,6 +40,7 @@ function ScorePage() {
             }));
 
             let trend = "unchanging";
+            // var trend = "unchanging";
 
             if (sortedDates.length >= 2) {
               const secondlastDate = sortedDates[sortedDates.length -2];
@@ -62,7 +65,16 @@ function ScorePage() {
 
           setDiseaseData(formatted);
         })
-        .catch((err) => console.error("Error loading scores:", err));
+    }
+  }, [patientId]);
+
+  useEffect(() => {
+    if (patientId) {
+      fetch(`http://localhost:5000/synthea_patient_info?user_id=${patientId}`)
+        .then(res => res.json())
+        .then(data => {
+          setPatientName(data.FIRST || "");
+        })
     }
   }, [patientId]);
 
@@ -75,7 +87,7 @@ function ScorePage() {
       const stroke = parseFloat(diseaseData.find(d => d.name === "Stroke")?.score || 0);
       const cancer = parseFloat(diseaseData.find(d => d.name === "Cancer")?.score || 0);
   
-      const requestBody = { heart, diabetes, stroke, cancer };
+      const requestBody = {heart, diabetes, stroke, cancer };
   
       const response = await fetch("http://localhost:5000/recommendations", {
         method: "POST",
@@ -86,8 +98,7 @@ function ScorePage() {
       const data = await response.json();
       setRecommendations(data.recommendations || []);
     } catch (error) {
-      console.error("Error getting recommendations:", error);
-      alert("Failed to fetch recommendations.");
+      alert("cannot  get the recommendation.!");
     }
   
     setLoading(false);
@@ -98,8 +109,10 @@ function ScorePage() {
       <div className="dashboard-wrapper">
         <div className="dashboard-box">
           <p style={{ textAlign: "center", marginBottom: "20px" }}>
-            Based on the health information, here is the current risk assessment for common diseases for the patient:
-          </p>
+          Based on the health information, here is the current risk assessment for common diseases for{" "}
+          <strong>{patientName}</strong>:
+            </p> 
+          {/* can insert name */}
 
           <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "30px" }}>
             <thead>
@@ -148,7 +161,7 @@ function ScorePage() {
             </div>
           )}
 
-          <div style={{ textAlign: "center" }}>
+            <div style={{ textAlign: "center" }}>
             <button className="btn" onClick={() => navigate("/*")}>
               Back to Search Page
             </button>
@@ -180,7 +193,6 @@ const tdStyle = {
 
 const tdButtonStyle = {
   padding: "10px",
-  backgroundColor: "#d4eaff",
   borderBottom: "1px solid #ccc",
 };
 

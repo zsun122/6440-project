@@ -6,16 +6,25 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
+import requests
+from datetime import datetime, date
+import sklearn
 
 import model_inference
 
 client = OpenAI(
-    api_key="",
+    api_key="", ## put api key here (found in repo readme)
     base_url="https://api.groq.com/openai/v1"
 )
 
 app = Flask(__name__)
 CORS(app)
+
+def calculate_age(birthdate, encounter_date):
+    birthday = datetime.strptime(birthdate, '%Y-%m-%d')
+    # today = datetime.strptime(encounter_date)
+    today = datetime.strptime(encounter_date, '%Y-%m-%dT%H:%M:%S%z')
+    return int(today.year - birthday.year - ((today.month, today.day) < (birthday.month, birthday.day)))
 
 #firestore certificate json file name here, place file in same directory
 cred = credentials.Certificate("cs6440-ca243-firebase-adminsdk-fbsvc-17837a36a9.json")
@@ -48,10 +57,18 @@ def get_recommendations():
     
     data = request.get_json()
 
+    # encounter_res = requests.get("http://localhost:5000/synthea_user_data", params={"user_id": user_id})
+    # if encounter_res.status_code ==200:
+    #     encounter_date = encounter_res.json()["encounters"][-1]["START"]
+    #     birthdate = data.get("BIRTHDATE")
+    #     if birthdate and encounter_date:
+    #         data["AGE"] = calculate_age(birthdate, encounter_date)
+
     heart = float(data.get("heart", 0))
     diabetes = float(data.get("diabetes", 0))
     stroke = float(data.get("stroke", 0))
     cancer = float(data.get("cancer", 0))
+    # age = data.get("AGE")
 
     myprompt = (
     "You are a highly knowledgeable and practical preventive health coach"
@@ -64,17 +81,21 @@ def get_recommendations():
     f"- Heart Disease Risk: {heart:.3f}/1\n"
     f"- Stroke Risk: {stroke:.3f}/1\n\n"
 
+    # "patient's age:"
+    # f"- {age}"
+
     "Your task:\n"
     "- Provide exactly 4 personalized recommendations, one for each disease listed above.\n"
-    "- Each recommendation must be realistic and lifestyle-based (focusing on diet, activity, habits, or routine screenings).\n"
+    "- Each recommendation must be realistic (focusing on diet, activity, habits, or routine screenings).\n"
     "- Avoid vague advice such as 'stay healthy'; be specific.\n"
-    "- Format each tip as a bullet point starting with a dash.\n"
+    "- format each tip as a bullet point starting with a dash.\n"
     "- when having a low score (less than 0.2), you should give a positive feedback and then tips.\n"
     "- when having a high score (more than 0.8), you should give a negative feedback and then tips."
-    "- Each line must follow this format:\n"
-    "  - [Disease] Risk ([score]/1): You have a [percent]% chance of having [Disease]. My recommendation is [specific tip].\n\n"
+    # "- you also need to consider age"
+    "- Each line must follow this example format:\n"
+    "  - Cancer Risk ([0.2]/1): You have a 20% chance of having Cancer. My recommendation is drink more water.\n\n"
 
-    "Now generate the 4 personalized recommendations based on the scores:"
+    "Now generate the 4 personalized recommendations for each diease based on the scores:"
 )
 
     response = client.chat.completions.create(
@@ -94,8 +115,12 @@ def get_recommendations():
 @app.route('/synthea_patient_ids', methods=['GET'])
 def get_all_patient_ids():
     docs = synthea_patients_ref.stream()
-    patient_ids = [doc.to_dict().get("Id") for doc in docs if "Id" in doc.to_dict()]
-    return jsonify(patient_ids), 200
+    ids = []
+    for doc in docs:
+        docd = doc.to_dict()
+        if "Id" in docd:
+            ids.append(docd["Id"])
+    return jsonify(ids), 200
 
 @app.route('/synthea_patient_info', methods=['GET'])
 def get_synthea_patient_info():
@@ -105,17 +130,26 @@ def get_synthea_patient_info():
 
     docs = synthea_patients_ref.where(filter=FieldFilter("Id", "==", user_id)).stream()
     for doc in docs:
-        return jsonify(doc.to_dict()), 200
+        data = doc.to_dict()
+
+        encounter_res = requests.get("http://localhost:5000/synthea_user_data", params={"user_id": user_id})
+        if encounter_res.status_code ==200:
+            encounter_date = encounter_res.json()["encounters"][-1]["START"]
+            birthdate = data.get("BIRTHDATE")
+            if birthdate and encounter_date:
+                data["AGE"] = calculate_age(birthdate, encounter_date)
+
+        return jsonify(data), 200
 
     return "Patient not found", 404
 
 @app.route('/update_patient_info', methods=['POST'])
 def update_patient_info():
     data = request.get_json()
-    patient_id = data.get("patientId")
+    id = data.get("patientId")
 
-    docs = synthea_patients_ref.where(filter=FieldFilter("Id", "==", patient_id)).stream()
-    patient_doc = next(docs, None)
+    docs = synthea_patients_ref.where(filter=FieldFilter("Id", "==", id)).stream()
+    doc = next(docs, None)
 
     update_data = {
         "FIRST": data.get("firstName", ""),
@@ -129,24 +163,22 @@ def update_patient_info():
         # "CANCER_HISTORY": data.get("cancerHistory", "")
     }
 
-    synthea_patients_ref.document(patient_doc.id).update(update_data)
+    synthea_patients_ref.document(doc.id).update(update_data)
 
-    return jsonify({"message": "Patient info updated successfully"}), 200
+    return jsonify({"message": "patient info updated successfully"}), 200
 
 @app.route("/get_scores", methods=["POST"])
 def get_scores():
     patient_id = request.json.get("patientId")
 
-    try:
-        scores = {
-            "Heart Disease": model_inference.heart_disease(patient_id),
-            "Cancer": model_inference.cancer(patient_id),
-            "Stroke": model_inference.stroke(patient_id),
-            "Diabetes": model_inference.diabetes(patient_id),
-        }
-        return jsonify(scores)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # try]
+    scores = {
+        "Heart Disease": model_inference.heart_disease(patient_id),
+        "Cancer": model_inference.cancer(patient_id),
+        "Stroke": model_inference.stroke(patient_id),
+        "Diabetes": model_inference.diabetes(patient_id),
+    }
+    return jsonify(scores)
     
 
 @app.route('/mimic_user_data', methods=['GET'])

@@ -21,7 +21,6 @@ function LineChart({ disease, trendData, onClose }) {
         label: `${disease} Risk Score`,
         data: trendData.map(entry => entry.value),
         borderColor: "#007bff",
-        backgroundColor: "rgba(0, 123, 255, 0.2)",
         tension: 0.2,
         fill: true,
         pointRadius: 4,
@@ -30,14 +29,16 @@ function LineChart({ disease, trendData, onClose }) {
     ],
   };
 
-  const maxScore = Math.max(...trendData.map(entry => entry.value), 0.01);
+  const allscore = trendData.map((entry) =>entry.value);
+  const maxScore = Math.max(...allscore, 0.01); // dynamic y axis
+
   const options = {
     responsive: true,
     scales: {
-      y: { beginAtZero: true, max: maxScore* 1.1 },
+      y: {beginAtZero: true, max: maxScore* 1.1 },
     },
     plugins: {
-      legend: { display: false },
+      legend: { display: false},
     },
   };
 
