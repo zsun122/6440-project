@@ -22,6 +22,7 @@ function Dashboard() {
     <div className="container">
       <div className="dashboard-wrapper">
         <div className="dashboard-box">
+
           <h3>Patient information</h3>
 
           <button
@@ -41,9 +42,10 @@ function Dashboard() {
 
             <p><strong>Last Name:</strong> {patientData?.LAST ? patientData.LAST.replace(/\d/g, '') : "N/A"}</p>
 
-
             {/* year - month - day*/}
             <p><strong>Birth Date:</strong> {patientData?.BIRTHDATE || "N/A"}</p>
+
+          <p><strong>Age:</strong> {patientData?.AGE ?? "N/A"}</p>
 
             {/* 8532 - female, 8507 - male*/}
             <p><strong>Gender:</strong> {patientData?.GENDER === "M"? "Male": patientData?.GENDER === "F"? "Female": "N/A"}</p>

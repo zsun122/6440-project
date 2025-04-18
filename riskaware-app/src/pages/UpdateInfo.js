@@ -47,18 +47,17 @@ function UpdateInfo() {
             // cancerHistory: data?.CANCER_HISTORY || "",
           });
         })
-        .catch((err) => console.error("Error loading patient data:", err));
     }
   }, [patientId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    const cleanedValue =
-      name === "firstName" || name === "middleName" || name === "lastName"
-        ? value.replace(/[^a-zA-Z\s\-']/g, "")
-        : value;
-  
+    let cleanedValue;
+
+    // const isName = name === "firstName" || name === "middleName" || name === "lastName";
+    
+    cleanedValue = value.replace(/[^a-zA-Z\s\-']/g, "");
     setFormData((prev) => ({ ...prev, [name]: cleanedValue }));
   };
   
