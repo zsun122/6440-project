@@ -13,7 +13,7 @@ import sklearn
 import model_inference
 
 client = OpenAI(
-    api_key="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", ## put api key here (found in repo readme)
+    api_key="", ## put api key here (found in repo readme)
     base_url="https://api.groq.com/openai/v1"
 )
 
