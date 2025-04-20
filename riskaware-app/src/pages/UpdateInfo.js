@@ -55,9 +55,11 @@ function UpdateInfo() {
 
     let cleanedValue;
 
-    // const isName = name === "firstName" || name === "middleName" || name === "lastName";
-    
-    cleanedValue = value.replace(/[^a-zA-Z\s\-']/g, "");
+    if (name === "firstName"|| name === "middleName" || name === "lastName") {
+      cleanedValue = value.replace(/[^a-zA-Z\s\-']/g,  "");
+    } else {
+      cleanedValue = value;
+    }
     setFormData((prev) => ({ ...prev, [name]: cleanedValue }));
   };
   
@@ -204,3 +206,4 @@ function UpdateInfo() {
 }
 
 export default UpdateInfo;
+
