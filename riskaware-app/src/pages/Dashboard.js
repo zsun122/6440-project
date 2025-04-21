@@ -11,7 +11,7 @@ function Dashboard() {
 
   useEffect(() => {
     if (patientId) {
-      fetch(`https://6440-project-production.up.railway.app/synthea_patient_info?user_id=${patientId}`)
+      fetch(`http://localhost:5000/synthea_patient_info?user_id=${patientId}`)
         .then((res) => res.json())
         .then((data) => setPatientData(data))
         .catch((err) => console.error("Error fetching patient data:", err));
