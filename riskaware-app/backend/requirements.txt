@@ -5,3 +5,4 @@ google-cloud-firestore
 openai
 scikit-learn
 requests
+python-dotenv
