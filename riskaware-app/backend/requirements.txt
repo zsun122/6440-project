@@ -6,3 +6,4 @@ openai
 scikit-learn
 requests
 python-dotenv
+model_inference
