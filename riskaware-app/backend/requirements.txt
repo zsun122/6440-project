@@ -1,9 +1,0 @@
-flask
-flask-cors
-firebase-admin
-google-cloud-firestore
-openai
-scikit-learn
-requests
-python-dotenv
-model_inference
