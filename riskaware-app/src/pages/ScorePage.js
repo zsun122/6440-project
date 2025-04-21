@@ -21,7 +21,7 @@ function ScorePage() {
 
   useEffect(() => {
     if (patientId) {
-      fetch("http://localhost:5000/get_scores", {
+      fetch("https://6440-project-production.up.railway.app/get_scores", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ patientId }),
@@ -70,7 +70,7 @@ function ScorePage() {
 
   useEffect(() => {
     if (patientId) {
-      fetch(`http://localhost:5000/synthea_patient_info?user_id=${patientId}`)
+      fetch(`https://6440-project-production.up.railway.app/synthea_patient_info?user_id=${patientId}`)
         .then(res => res.json())
         .then(data => {
           setPatientName(data.FIRST || "");
@@ -89,7 +89,7 @@ function ScorePage() {
   
       const requestBody = {heart, diabetes, stroke, cancer };
   
-      const response = await fetch("http://localhost:5000/recommendations", {
+      const response = await fetch("https://6440-project-production.up.railway.app/recommendations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),

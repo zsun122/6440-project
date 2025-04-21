@@ -8,7 +8,7 @@ function PatientSearch() {
   const [patientIds, setPatientIds] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/synthea_patient_ids")
+    fetch("https://6440-project-production.up.railway.app/synthea_patient_ids")
       .then((res) => res.json())
       .then((data) => setPatientIds(data))
       .catch((err) => console.error("Error fetching patient IDs:", err));
