@@ -1,3 +1,11 @@
+from dotenv import load_dotenv
+import json, os
+from pathlib import Path
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
+
+print("DEBUG: FIREBASE_CONFIG loaded?", "FIREBASE_CREDENTIAL_PATH" in os.environ)
+print("DEBUG: OPENAI_API_KEY loaded?", "OPENAI_API_KEY" in os.environ)
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from openai import OpenAI
@@ -10,12 +18,14 @@ import requests
 from datetime import datetime, date
 import sklearn
 
+from firebase_admin import credentials, initialize_app
+
 import model_inference
 
 client = OpenAI (
-    api_key = "", ## put api key here (found in repo readme)
+    api_key=os.environ['OPENAI_API_KEY'],
     base_url="https://api.groq.com/openai/v1"
- )
+)
 
 app = Flask(__name__)
 CORS(app)
@@ -27,8 +37,10 @@ def calculate_age(birthdate, encounter_date):
     return int(today.year - birthday.year - ((today.month, today.day) < (birthday.month, birthday.day)))
 
 #firestore certificate json file name here, place file in same directory
-cred = credentials.Certificate("cs6440-ca243-firebase-adminsdk-fbsvc-17837a36a9.json")
-firebase_admin.initialize_app(cred)
+firebase_cred_path = os.environ['FIREBASE_CREDENTIAL_PATH']
+cred = credentials.Certificate(firebase_cred_path)
+initialize_app(cred)
+
 
 db = firestore.client()
 
@@ -220,4 +232,6 @@ def get_synthea_user_data():
     return jsonify(user_data)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
+

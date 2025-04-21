@@ -1,5 +1,7 @@
-Flask
-firebase-admin
+flask
 flask-cors
+firebase-admin
+google-cloud-firestore
 openai
 scikit-learn
+requests
